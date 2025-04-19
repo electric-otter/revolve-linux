@@ -27,7 +27,35 @@ if ! id -u revolve-linux >/dev/null 2>&1; then
     curl -L https://nixos.org/nix/install
 fi
 
-# Build directory
+# Kernel installation steps
+KERNEL_VERSION="5.10.0"  # Replace with the desired kernel version
+
+# Download Kernel source
+cd /usr/src
+wget https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-$KERNEL_VERSION.tar.xz
+tar -xf linux-$KERNEL_VERSION.tar.xz
+cd linux-$KERNEL_VERSION
+
+# Configure the Kernel
+make menuconfig  # This will let you configure the kernel interactively
+# You can use the default configuration if desired:
+# make defconfig
+
+# Build the Kernel
+make -j$(nproc)  # Use all available CPU cores for faster compilation
+make modules -j$(nproc)
+
+# Install the Kernel and Modules
+make modules_install
+make install
+
+# Update GRUB
+update-grub  # This will automatically detect the new kernel and update GRUB
+
+# Install Kernel headers (Optional but recommended)
+make headers_install
+
+# Proceed with the rest of the script...
 mkdir -v build
 cd build
 
@@ -140,7 +168,7 @@ EOF
 
 # Create the GRUB bootable ISO
 grub-mkrescue -o revolve-linux.iso $LFS --modules="normal iso9660 biosdisk memdisk search tar ls"
-
+echo "ISO download done. Install the OS by burning to USB or running in a VM, preferrably QEMU."
 # Build the ISO using xorriso (optional, if you prefer)
 # xorriso -as mkisofs \
 #   -iso-level 3 \
